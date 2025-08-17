@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
-import { Shield, User, Settings, AlertCircle, UserPlus, Smartphone, Lock, Eye, EyeOff } from 'lucide-react';
+import { Shield, User, Settings, AlertCircle, UserPlus, Lock, Eye, EyeOff } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { authService } from '../utils/auth';
 
 export function AuthScreen({ onAuthenticated }) {
   const [userType, setUserType] = useState('user'); // 'user' or 'official'
@@ -33,22 +33,8 @@ export function AuthScreen({ onAuthenticated }) {
     generatedUserId: ''
   });
 
-  const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-1276a223`;
-
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const callAPI = async (endpoint, data) => {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
-      },
-      body: JSON.stringify(data)
-    });
-    return response.json();
   };
 
   // Registration flow
@@ -77,7 +63,7 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
 
     try {
-      const result = await callAPI('/auth/register', {
+      const result = await authService.register({
         name: formData.name,
         aadhaarNumber: formData.aadhaarNumber,
         phoneNumber: formData.phoneNumber,
@@ -100,35 +86,20 @@ export function AuthScreen({ onAuthenticated }) {
     }
   };
 
-  // OTP verification for registration
+  // OTP verification for registration (demo - always accept 123456)
   const handleVerifyRegistrationOTP = async () => {
     if (formData.otp.length !== 6) {
       setError('Please enter the complete 6-digit OTP');
       return;
     }
 
-    setLoading(true);
-    setError('');
-
-    try {
-      const result = await callAPI('/auth/verify-registration', {
-        phoneNumber: formData.phoneNumber,
-        otp: formData.otp
-      });
-
-      if (result.success) {
-        if (result.requiresPassword) {
-          setStep('password');
-        }
-      } else {
-        setError(result.error || 'OTP verification failed');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
-      console.error('OTP verification error:', err);
-    } finally {
-      setLoading(false);
+    if (formData.otp !== '123456') {
+      setError('Invalid OTP. Use 123456 for demo');
+      return;
     }
+
+    setError('');
+    setStep('password');
   };
 
   // Set password after registration
@@ -142,17 +113,11 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
 
     try {
-      const result = await callAPI('/auth/set-password', {
-        userId: formData.generatedUserId,
-        password: formData.password
-      });
+      const result = await authService.setPassword(formData.generatedUserId, formData.password);
 
       if (result.success) {
         // Auto-login after password setup
-        const loginResult = await callAPI('/auth/login', {
-          userId: formData.generatedUserId,
-          password: formData.password
-        });
+        const loginResult = await authService.login(formData.generatedUserId, formData.password);
 
         if (loginResult.success) {
           onAuthenticated(loginResult.user);
@@ -184,10 +149,7 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
 
     try {
-      const result = await callAPI('/auth/login', {
-        userId: formData.userId,
-        password: formData.password
-      });
+      const result = await authService.login(formData.userId, formData.password);
 
       if (result.success) {
         onAuthenticated(result.user);
@@ -219,9 +181,7 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
 
     try {
-      const result = await callAPI('/auth/forgot-password', {
-        userId: formData.userId
-      });
+      const result = await authService.forgotPassword(formData.userId);
 
       if (result.success) {
         setStep('otp');
@@ -252,11 +212,7 @@ export function AuthScreen({ onAuthenticated }) {
     setError('');
 
     try {
-      const result = await callAPI('/auth/reset-password', {
-        userId: formData.userId,
-        otp: formData.otp,
-        newPassword: formData.password
-      });
+      const result = await authService.resetPassword(formData.userId, formData.otp, formData.password);
 
       if (result.success) {
         setError('');
@@ -533,6 +489,9 @@ export function AuthScreen({ onAuthenticated }) {
             : 'Enter the 6-digit code sent to your registered phone number'
           }
         </p>
+        <p className="text-xs text-blue-600 mt-1">
+          Demo: Use 123456 as OTP
+        </p>
       </div>
 
       <div className="flex justify-center">
@@ -590,7 +549,7 @@ export function AuthScreen({ onAuthenticated }) {
           <Input
             id="otp"
             type="text"
-            placeholder="6-digit OTP"
+            placeholder="6-digit OTP (use 123456)"
             value={formData.otp}
             onChange={(e) => handleInputChange('otp', e.target.value.replace(/\D/g, ''))}
             maxLength={6}

@@ -21,6 +21,7 @@ import {
   Users
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { complaintsService } from '../utils/complaints';
 
 export function Dashboard({ user, onNavigate, onLogout }) {
   const [dashboardData, setDashboardData] = useState({
@@ -36,7 +37,6 @@ export function Dashboard({ user, onNavigate, onLogout }) {
     error: null
   });
 
-  const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-1276a223`;
 
   useEffect(() => {
     if (user?.userId) {
@@ -49,17 +49,8 @@ export function Dashboard({ user, onNavigate, onLogout }) {
       setDashboardData(prev => ({ ...prev, loading: true, error: null }));
 
       // Load user's complaints
-      const complaintsResponse = await fetch(`${API_BASE}/complaints/user/${user.userId}`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`
-        }
-      });
-      
-      let complaints = [];
-      if (complaintsResponse.ok) {
-        const complaintsResult = await complaintsResponse.json();
-        complaints = complaintsResult.success ? complaintsResult.complaints : [];
-      }
+      const complaintsResult = await complaintsService.getUserComplaints(user.userId);
+      const complaints = complaintsResult.success ? complaintsResult.complaints : [];
 
       // Calculate stats
       const totalReports = complaints.length;

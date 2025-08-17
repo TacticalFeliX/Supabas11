@@ -23,6 +23,7 @@ import {
   MessageCircle,
   Bot
 } from 'lucide-react';
+import { complaintsService } from '../utils/complaints';
 
 export function ReportGrievance({ user, onBack, onNavigate }) {
   const [step, setStep] = useState(1);
@@ -123,32 +124,23 @@ export function ReportGrievance({ user, onBack, onNavigate }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleSubmit = () => {
-    // Generate complaint ID
-    const newComplaintId = 'CR' + Date.now().toString().slice(-6);
-    setComplaintId(newComplaintId);
-    
-    // Store in localStorage for demo
-    const complaints = JSON.parse(localStorage.getItem('complaints') || '[]');
-    const newComplaint = {
-      ...formData,
-      id: newComplaintId,
-      status: 'Submitted',
-      submittedAt: new Date().toISOString(),
-      timeline: [
-        {
-          status: 'Submitted',
-          date: new Date().toISOString(),
-          description: 'Complaint submitted successfully',
-          isCompleted: true
-        }
-      ]
-    };
-    
-    complaints.push(newComplaint);
-    localStorage.setItem('complaints', JSON.stringify(complaints));
-    
-    setStep(4); // Success step
+  const handleSubmit = async () => {
+    try {
+      const result = await complaintsService.submitComplaint({
+        ...formData,
+        userId: user.userId
+      });
+
+      if (result.success) {
+        setComplaintId(result.complaintId);
+        setStep(4); // Success step
+      } else {
+        alert('Failed to submit complaint: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      alert('Network error. Please try again.');
+    }
   };
 
   const handleWhatNextClick = () => {

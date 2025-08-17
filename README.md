@@ -11,92 +11,76 @@ A comprehensive cybercrime reporting and management system built with React and 
 - **Real-time Alerts**: Security alerts and threat notifications
 - **Educational Chatbot**: Learn about cybersecurity and prevention
 
-## Setup Instructions
+## Quick Setup
 
 ### 1. Clone and Install
 ```bash
 npm install
 ```
 
-### 2. Configure Supabase
+### 2. Environment Setup
+1. Copy `.env.example` to `.env`
+2. Update the environment variables with your Supabase project details
 
+### 3. Supabase Setup
 1. Create a new project on [Supabase](https://supabase.com)
-2. Get your project details from the Supabase dashboard:
-   - Project ID (from the URL: `https://[PROJECT_ID].supabase.co`)
-   - Public Anonymous Key (from Settings > API)
-
-3. Update the configuration in `utils/supabase/info.jsx`:
-```javascript
-export const projectId = "your-project-id-here";
-export const publicAnonKey = "your-public-anon-key-here";
+2. Run the SQL migrations in your Supabase SQL editor (found in `supabase/migrations/`)
+3. Get your project URL and anon key from Settings > API
+4. Update your `.env` file:
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 3. Set up Database
-
-Run the following SQL in your Supabase SQL editor to create the required table:
-
-```sql
-CREATE TABLE kv_store_1276a223 (
-  key TEXT NOT NULL PRIMARY KEY,
-  value JSONB NOT NULL
-);
-```
-
-### 4. Deploy Edge Function
-
-The server code is located in `supabase/functions/server/`. Deploy it to your Supabase project:
-
-1. Install Supabase CLI
-2. Login to Supabase: `supabase login`
-3. Link your project: `supabase link --project-ref [YOUR_PROJECT_ID]`
-4. Deploy the function: `supabase functions deploy server`
-
-### 5. Run the Application
+### 4. Run the Application
 ```bash
 npm run dev
 ```
 
-## Configuration
+## Deployment
 
-### Updating Supabase Connection
+### Vercel Deployment
+1. Connect your GitHub repository to Vercel
+2. Add environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
 
-To connect to your own Supabase project:
-
-1. **Get your project details** from Supabase dashboard
-2. **Update `utils/supabase/info.jsx`**:
-   ```javascript
-   export const projectId = "your-actual-project-id";
-   export const publicAnonKey = "your-actual-anon-key";
-   ```
-3. **Test the connection** - the app will automatically validate the configuration
-
-### Environment Variables (Optional)
-
-You can also use environment variables:
+### Manual Deployment
 ```bash
-VITE_SUPABASE_PROJECT_ID=your-project-id
-VITE_SUPABASE_ANON_KEY=your-anon-key
+npm run build
 ```
-
-## User Types
-
-- **Citizens**: Can file complaints, track status, and access safety features
-- **Officials**: Admin access to manage complaints, view analytics, and coordinate responses
 
 ## Demo Credentials
 
 For testing purposes:
 - **OTP**: Use `123456` for any phone verification
-- **Admin Access**: Use any government ID with 8+ characters
+- **Admin Access**: Register with government ID (8+ characters)
+
+## Environment Variables
+
+Required environment variables:
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
+## Database Schema
+
+The application uses the following main tables:
+- `users`: User authentication and profile data
+- `complaints`: Cybercrime complaint reports
+- `suspicious_entities`: Suspicious entity reports
 
 ## Tech Stack
 
 - **Frontend**: React, Tailwind CSS, Radix UI
-- **Backend**: Supabase Edge Functions (Deno)
-- **Database**: Supabase PostgreSQL
+- **Backend**: Supabase (PostgreSQL + Auth)
 - **Charts**: Recharts
 - **Icons**: Lucide React
+- **Deployment**: Vercel
 
 ## Support
 
-For issues or questions, please check the configuration in `utils/supabase/info.jsx` and ensure your Supabase project is properly set up.
+1. Ensure your Supabase project is properly configured
+2. Check that all environment variables are set correctly
+3. Verify database migrations have been run
+4. Test the connection using the app's built-in diagnostics
+
+For issues, check the browser console for detailed error messages.

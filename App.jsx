@@ -11,12 +11,14 @@ import { AlertsCenter } from "./components/AlertsCenter.jsx";
 import { ReportSuspicious } from "./components/ReportSuspicious.jsx";
 import { ProfileSettings } from "./components/ProfileSettings.jsx";
 import { NotificationCenter } from "./components/NotificationCenter.jsx";
+import { ConnectionTest } from "./components/ConnectionTest.jsx";
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState("consent");
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [ragContext, setRagContext] = useState(null);
+  const [showConnectionTest, setShowConnectionTest] = useState(false);
 
   // Check for existing user session
   useEffect(() => {
@@ -137,11 +139,38 @@ export default function App() {
             context={ragContext}
           />
         );
+      case "connection-test":
+        return <ConnectionTest />;
       default:
-        return <ConsentScreen onConsentGiven={handleConsentGiven} />;
+        return <WebConsentScreen onConsentGiven={handleConsentGiven} />;
     }
   };
 
+  // Show connection test if environment variables are missing
+  useEffect(() => {
+    const hasEnvVars = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!hasEnvVars && currentScreen === 'consent') {
+      setShowConnectionTest(true);
+    }
+  }, [currentScreen]);
+
+  if (showConnectionTest) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="space-y-4">
+          <ConnectionTest />
+          <div className="text-center">
+            <Button 
+              onClick={() => setShowConnectionTest(false)}
+              variant="outline"
+            >
+              Continue Anyway
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {renderScreen()}

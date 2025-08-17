@@ -26,6 +26,7 @@ import {
   User,
   Link
 } from 'lucide-react';
+import { complaintsService } from '../utils/complaints';
 
 export function ReportSuspicious({ user, onBack }) {
   const [step, setStep] = useState(1);
@@ -130,32 +131,22 @@ export function ReportSuspicious({ user, onBack }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleSubmit = () => {
-    // Generate report ID
-    const reportId = 'SR' + Date.now().toString().slice(-6);
-    
-    // Store in localStorage for demo
-    const reports = JSON.parse(localStorage.getItem('suspicious_reports') || '[]');
-    const newReport = {
-      ...formData,
-      id: reportId,
-      status: 'Under Analysis',
-      submittedAt: new Date().toISOString(),
-      reporter: user?.name || 'Anonymous',
-      timeline: [
-        {
-          status: 'Submitted',
-          date: new Date().toISOString(),
-          description: 'Suspicious entity reported for analysis',
-          isCompleted: true
-        }
-      ]
-    };
-    
-    reports.push(newReport);
-    localStorage.setItem('suspicious_reports', JSON.stringify(reports));
-    
-    setStep(4); // Success step
+  const handleSubmit = async () => {
+    try {
+      const result = await complaintsService.reportSuspiciousEntity({
+        ...formData,
+        userId: user.userId
+      });
+
+      if (result.success) {
+        setStep(4); // Success step
+      } else {
+        alert('Failed to submit report: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      alert('Network error. Please try again.');
+    }
   };
 
   const renderStep1 = () => (
